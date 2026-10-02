@@ -62,5 +62,5 @@
 ## 9. Deploy to Render
 
 - [x] 9.1 Add `render.yaml`: web service, free plan, Node runtime, build `npm ci && npm run build`, start `npm start`, env vars `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (`sync: false`)
-- [ ] 9.2 With the user: initialise git, push to a GitHub repo, create the Render service from the blueprint, and set both env vars
-- [ ] 9.3 Open the public URL with no credentials and confirm the page matches the local render; note the cold-start time
+- [x] 9.2 With the user: initialise git, push to a GitHub repo, create the Render service from the blueprint, and set both env vars. Done: repo Rajat22-11/AI-Stock-Recommendation-UI, Render service `paper-pnl` (free, Singapore)
+- [x] 9.3 Open the public URL with no credentials and confirm the page matches the local render; note the cold-start time. Done: https://paper-pnl.onrender.com matches the local render; cold start not yet measured (first visit after deploy was warm)
