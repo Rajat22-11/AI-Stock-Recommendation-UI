@@ -41,6 +41,18 @@ export function RetroBadge() {
   );
 }
 
+/** The skill's why-grade (A–D). The letter carries the meaning, so no colour coding. */
+export function WhyGrade({ grade }: { grade: string | null }) {
+  return (
+    <span
+      title="Why-grade: strength of the catalyst behind the move"
+      className="rounded bg-chip px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide"
+    >
+      {grade ? `Grade ${grade}` : "Grade n/a"}
+    </span>
+  );
+}
+
 /** Colours text by the sign of a DB value. */
 export function Signed({ value, children }: { value: Num | null; children: ReactNode }) {
   const s = sign(value);

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { connection } from "next/server";
 import { EquityCurve } from "@/components/EquityCurve";
+import { Suggestions } from "@/components/Suggestions";
 import { Empty, RetroBadge, Section, Signed, Table, Td } from "@/components/ui";
 import { asNumber, day, inr, pct, price, signedInr } from "@/lib/format";
 import { getDashboard } from "@/lib/queries";
@@ -10,7 +11,8 @@ const NEAR_STOP_PCT = 3;
 
 export default async function Home() {
   await connection(); // render per request: data changes whenever a run processes the ledger
-  const { equity, open, closed, pending, processedThrough } = await getDashboard();
+  const { equity, open, closed, pending, processedThrough, suggestions, alerts, monthLabel } =
+    await getDashboard();
   const latest = equity.at(-1);
 
   return (
@@ -39,6 +41,8 @@ export default async function Home() {
           value={<Signed value={latest?.return_pct ?? null}>{pct(latest?.return_pct)}</Signed>}
         />
       </section>
+
+      <Suggestions suggestions={suggestions} alerts={alerts} monthLabel={monthLabel} />
 
       <Section title="Equity curve">
         <EquityCurve rows={equity} />

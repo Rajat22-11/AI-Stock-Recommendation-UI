@@ -76,3 +76,41 @@ export function istTime(ts: string | null | undefined): string {
 export function asNumber(v: Num | null | undefined): number | null {
   return toNumber(v);
 }
+
+const int = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+
+/** Whole number with Indian grouping: 23577470 → "2,35,77,470". */
+export function count(v: Num | null | undefined): string {
+  const n = toNumber(v);
+  return n === null ? "—" : int.format(n);
+}
+
+/** Checklist cells say "n/a" for a missing value instead of the table dash. */
+export function na(formatted: string): string {
+  return formatted === "—" ? "n/a" : formatted;
+}
+
+/**
+ * Close above (+) or below (-) the pivot, in percent. The one figure the page derives
+ * itself, for explanation only (spec: signal-suggestions, "Why expander with checklist").
+ */
+export function closeVsPivotPct(close: Num | null | undefined, pivot: Num | null | undefined): number | null {
+  const c = toNumber(close);
+  const p = toNumber(pivot);
+  if (c === null || p === null || p === 0) return null;
+  return (c / p - 1) * 100;
+}
+
+const upTo2 = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+
+/** Number with at most 2 decimals and no sign: 0.9 → "0.9", 5 → "5". */
+export function plain(v: Num | null | undefined): string {
+  const n = toNumber(v);
+  return n === null ? "—" : upTo2.format(n);
+}
+
+/** Unsigned percentage for sizes and depths: 5 → "5%", 42.6 → "42.6%". */
+export function plainPct(v: Num | null | undefined): string {
+  const s = plain(v);
+  return s === "—" ? s : s + "%";
+}
