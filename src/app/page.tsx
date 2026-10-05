@@ -1,22 +1,91 @@
 import type { ReactNode } from "react";
 import { connection } from "next/server";
+import { BookRisk } from "@/components/BookRisk";
+import { DataList, type Column } from "@/components/DataList";
 import { EquityCurve } from "@/components/EquityCurve";
-import { Suggestions } from "@/components/Suggestions";
-import { Empty, RetroBadge, Section, Signed, Table, Td } from "@/components/ui";
+import { Ideas } from "@/components/Ideas";
+import { Empty, RetroBadge, Section, Signed, SymbolLink } from "@/components/ui";
 import { asNumber, day, inr, pct, price, signedInr } from "@/lib/format";
 import { getDashboard } from "@/lib/queries";
+import type { ClosedTrade, OpenPosition, PendingEntry } from "@/lib/types";
 
 // A position whose DB-reported distance to stop is at or below this is highlighted.
 const NEAR_STOP_PCT = 3;
 
-export default async function Home() {
+function isNearStop(p: OpenPosition): boolean {
+  const dist = asNumber(p.dist_to_stop_pct);
+  return dist !== null && dist <= NEAR_STOP_PCT;
+}
+
+const OPEN_COLUMNS: Column<OpenPosition>[] = [
+  { label: "Symbol", cell: (p) => <Sym id={p.signal_id} symbol={p.symbol} retro={p.retro_seeded} /> },
+  {
+    label: "P&L %",
+    primary: true,
+    cell: (p) => <Signed value={p.unrealized_pct}>{pct(p.unrealized_pct)}</Signed>,
+  },
+  { label: "Stop", primary: true, cell: (p) => price(p.stop_current) },
+  {
+    label: "To stop",
+    cell: (p) =>
+      isNearStop(p) ? (
+        <span className="font-semibold text-warn-fg">{pct(p.dist_to_stop_pct)} · near stop</span>
+      ) : (
+        pct(p.dist_to_stop_pct)
+      ),
+  },
+  { label: "Filled", cell: (p) => day(p.fill_date) },
+  { label: "Fill", cell: (p) => price(p.fill_price) },
+  { label: "Last close", cell: (p) => price(p.last_close) },
+];
+
+const CLOSED_COLUMNS: Column<ClosedTrade>[] = [
+  { label: "Symbol", cell: (t) => <Sym id={t.signal_id} symbol={t.symbol} retro={t.retro_seeded} /> },
+  {
+    label: "P&L",
+    primary: true,
+    cell: (t) => <Signed value={t.realized_pnl}>{signedInr(t.realized_pnl, 2)}</Signed>,
+  },
+  { label: "Reason", primary: true, cell: (t) => t.exit_reason ?? "—" },
+  { label: "Entry", cell: (t) => day(t.fill_date) },
+  { label: "Entry price", cell: (t) => price(t.fill_price) },
+  { label: "Exit", cell: (t) => day(t.exit_date) },
+  { label: "Exit price", cell: (t) => price(t.exit_price) },
+];
+
+const PENDING_COLUMNS: Column<PendingEntry>[] = [
+  { label: "Symbol", cell: (e) => <Sym id={e.signal_id} symbol={e.symbol} retro={Boolean(e.signals?.retro_seeded)} /> },
+  { label: "Stop", primary: true, cell: (e) => price(e.stop_initial) },
+  { label: "Verdict", cell: (e) => e.signals?.verdict ?? "—" },
+  {
+    label: "Entry zone",
+    cell: (e) => (
+      <>
+        {price(e.entry_low)} – {price(e.entry_high)}
+      </>
+    ),
+  },
+  {
+    label: "Window",
+    cell: (e) => (
+      <>
+        {day(e.window_start)} – {day(e.window_end)}
+      </>
+    ),
+  },
+];
+
+export default async function Home({ searchParams }: PageProps<"/">) {
   await connection(); // render per request: data changes whenever a run processes the ledger
-  const { equity, open, closed, pending, processedThrough, suggestions, alerts, monthLabel } =
-    await getDashboard();
+  const [{ equity, open, closed, pending, processedThrough, bookRisk, ideas }, query] = await Promise.all([
+    getDashboard(),
+    searchParams,
+  ]);
   const latest = equity.at(-1);
+  const tab = query.ideas === "watch" ? "watch" : "entry";
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 sm:py-10">
+    <main className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 sm:py-8">
       <header className="mb-2">
         <h1 className="text-2xl font-semibold tracking-tight">Paper P&amp;L</h1>
         <p className="text-sm text-muted">
@@ -42,7 +111,9 @@ export default async function Home() {
         />
       </section>
 
-      <Suggestions suggestions={suggestions} alerts={alerts} monthLabel={monthLabel} />
+      <BookRisk row={bookRisk} />
+
+      <Ideas ideas={ideas} tab={tab} />
 
       <Section title="Equity curve">
         <EquityCurve rows={equity} />
@@ -52,37 +123,12 @@ export default async function Home() {
         {open.length === 0 ? (
           <Empty>No open positions</Empty>
         ) : (
-          <Table head={["Symbol", "Filled", "Fill", "Last close", "P&L %", "Stop", "To stop"]}>
-            {open.map((p) => {
-              const dist = asNumber(p.dist_to_stop_pct);
-              const near = dist !== null && dist <= NEAR_STOP_PCT;
-              return (
-                <tr
-                  key={p.signal_id}
-                  className={`border-b border-line last:border-0 ${near ? "bg-warn-bg" : ""}`}
-                >
-                  <Td left>
-                    <span className="font-medium">{p.symbol}</span>
-                    {p.retro_seeded && <RetroBadge />}
-                  </Td>
-                  <Td>{day(p.fill_date)}</Td>
-                  <Td>{price(p.fill_price)}</Td>
-                  <Td>{price(p.last_close)}</Td>
-                  <Td>
-                    <Signed value={p.unrealized_pct}>{pct(p.unrealized_pct)}</Signed>
-                  </Td>
-                  <Td>{price(p.stop_current)}</Td>
-                  <Td>
-                    {near ? (
-                      <span className="font-semibold text-warn-fg">{pct(p.dist_to_stop_pct)} · near stop</span>
-                    ) : (
-                      pct(p.dist_to_stop_pct)
-                    )}
-                  </Td>
-                </tr>
-              );
-            })}
-          </Table>
+          <DataList
+            rows={open}
+            columns={OPEN_COLUMNS}
+            rowKey={(p) => p.signal_id}
+            highlight={isNearStop}
+          />
         )}
       </Section>
 
@@ -90,24 +136,7 @@ export default async function Home() {
         {closed.length === 0 ? (
           <Empty>No closed trades yet</Empty>
         ) : (
-          <Table head={["Symbol", "Entry", "Entry price", "Exit", "Exit price", "Reason", "P&L"]}>
-            {closed.map((t) => (
-              <tr key={t.signal_id} className="border-b border-line last:border-0">
-                <Td left>
-                  <span className="font-medium">{t.symbol}</span>
-                  {t.retro_seeded && <RetroBadge />}
-                </Td>
-                <Td>{day(t.fill_date)}</Td>
-                <Td>{price(t.fill_price)}</Td>
-                <Td>{day(t.exit_date)}</Td>
-                <Td>{price(t.exit_price)}</Td>
-                <Td>{t.exit_reason ?? "—"}</Td>
-                <Td>
-                  <Signed value={t.realized_pnl}>{signedInr(t.realized_pnl, 2)}</Signed>
-                </Td>
-              </tr>
-            ))}
-          </Table>
+          <DataList rows={closed} columns={CLOSED_COLUMNS} rowKey={(t) => t.signal_id} />
         )}
       </Section>
 
@@ -115,24 +144,7 @@ export default async function Home() {
         {pending.length === 0 ? (
           <Empty>No pending entries</Empty>
         ) : (
-          <Table head={["Symbol", "Verdict", "Entry zone", "Window", "Stop"]}>
-            {pending.map((e) => (
-              <tr key={e.signal_id} className="border-b border-line last:border-0">
-                <Td left>
-                  <span className="font-medium">{e.symbol}</span>
-                  {e.signals?.retro_seeded && <RetroBadge />}
-                </Td>
-                <Td>{e.signals?.verdict ?? "—"}</Td>
-                <Td>
-                  {price(e.entry_low)} – {price(e.entry_high)}
-                </Td>
-                <Td>
-                  {day(e.window_start)} – {day(e.window_end)}
-                </Td>
-                <Td>{price(e.stop_initial)}</Td>
-              </tr>
-            ))}
-          </Table>
+          <DataList rows={pending} columns={PENDING_COLUMNS} rowKey={(e) => e.signal_id} />
         )}
       </Section>
 
@@ -141,6 +153,15 @@ export default async function Home() {
         investment advice.
       </footer>
     </main>
+  );
+}
+
+function Sym({ id, symbol, retro }: { id: number; symbol: string; retro: boolean }) {
+  return (
+    <>
+      <SymbolLink id={id} symbol={symbol} />
+      {retro && <RetroBadge />}
+    </>
   );
 }
 

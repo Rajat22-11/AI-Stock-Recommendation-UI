@@ -11,6 +11,13 @@
   --loss: #b91c1c;
   --warn-bg: #fef3c7;
   --warn-fg: #92400e;
+  /* Verdict colours: same hue for a verdict on every run and chart. */
+  --v-entry: #15803d;
+  --v-reduced: #4d7c0f;
+  --v-alert: #b45309;
+  --v-wait: #0369a1;
+  --v-hold: #6d28d9;
+  --v-nogo: #64748b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +32,12 @@
     --loss: #f87171;
     --warn-bg: #3b2a0a;
     --warn-fg: #fcd34d;
+    --v-entry: #4ade80;
+    --v-reduced: #a3e635;
+    --v-alert: #fbbf24;
+    --v-wait: #38bdf8;
+    --v-hold: #a78bfa;
+    --v-nogo: #94a3b8;
   }
 }
 
@@ -39,6 +52,12 @@
   --color-loss: var(--loss);
   --color-warn-bg: var(--warn-bg);
   --color-warn-fg: var(--warn-fg);
+  --color-v-entry: var(--v-entry);
+  --color-v-reduced: var(--v-reduced);
+  --color-v-alert: var(--v-alert);
+  --color-v-wait: var(--v-wait);
+  --color-v-hold: var(--v-hold);
+  --color-v-nogo: var(--v-nogo);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -46,4 +65,22 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Tooltips use the HTML popover API (tap, keyboard, Esc and light-dismiss with no JS).
+   Popovers sit in the top layer, so they are shown as a small sheet at the bottom of
+   the viewport rather than anchored to the trigger. */
+.tip[popover] {
+  position: fixed;
+  inset: auto 1rem 1rem 1rem;
+  margin: 0 auto;
+  max-width: 28rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--foreground);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
 }

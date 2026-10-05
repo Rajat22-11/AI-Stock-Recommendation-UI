@@ -90,17 +90,6 @@ export function na(formatted: string): string {
   return formatted === "—" ? "n/a" : formatted;
 }
 
-/**
- * Close above (+) or below (-) the pivot, in percent. The one figure the page derives
- * itself, for explanation only (spec: signal-suggestions, "Why expander with checklist").
- */
-export function closeVsPivotPct(close: Num | null | undefined, pivot: Num | null | undefined): number | null {
-  const c = toNumber(close);
-  const p = toNumber(pivot);
-  if (c === null || p === null || p === 0) return null;
-  return (c / p - 1) * 100;
-}
-
 const upTo2 = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
 
 /** Number with at most 2 decimals and no sign: 0.9 → "0.9", 5 → "5". */
@@ -113,4 +102,21 @@ export function plain(v: Num | null | undefined): string {
 export function plainPct(v: Num | null | undefined): string {
   const s = plain(v);
   return s === "—" ? s : s + "%";
+}
+
+/** Planned reward-to-risk as a ratio: 3.12 → "1 : 3.12". */
+export function rr(v: Num | null | undefined): string {
+  const n = toNumber(v);
+  return n === null ? "n/a" : `1 : ${num2.format(n)}`;
+}
+
+/** R multiple with sign: -1.134 → "-1.13 R". */
+export function rMult(v: Num | null | undefined): string {
+  const n = toNumber(v);
+  return n === null ? "—" : (n > 0 ? "+" : "") + n.toFixed(2) + " R";
+}
+
+/** Agent confidence on its 1–5 scale. */
+export function confidence(v: number | null | undefined): string {
+  return v === null || v === undefined ? "n/a" : `${v} / 5`;
 }
